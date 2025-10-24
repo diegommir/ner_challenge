@@ -4,6 +4,7 @@ import json
 
 def get_questions(num_questions: int, training_cat: str):
     '''This function select "num_questions" of each category to be used during the model training.'''
+    print('Selecting', num_questions, 'questions of', training_cat, 'category...')
     cat_questions = []
     normal_questions = []
 
@@ -90,7 +91,7 @@ def get_english_words():
 
 if __name__ == '__main__':
     print('Command line run...')
-    num_questions = 100
+    num_questions = 200
     get_questions(num_questions, 'numbers')
     get_questions(num_questions, 'unusual')
     get_questions(num_questions, 'non_english')
