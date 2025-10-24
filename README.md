@@ -58,3 +58,14 @@ But I realized that one question could fall into more than one category.
 So to train only one BERT model capable of that, I would have to take into account the possible combinations of classes, for example 
 numbers|unusual category or non_english|numbers.
 This would probably be a more elegant solution. But since the time is limited, I decided to train instead three models, each one specialized into one of the categories. This way the fine_tuner module was built to be able to train each model separately.
+
+## Estimation Problem
+There is a secondary challenge asking for an estimation of how many questions of each category has among the total Jeopardy dataset.
+To do this I've counted how many random questions iterations were necessary to get the amount of 1000 questions for each type.
+This way a can extrapolate the results to the whole dataset.
+
+There is of course some error to this type of approach, specially for the models with lower scores during the training. 
+But after 3 runs of the curator, we got:
+- numbers: Between 38.1% and 39.2%, giving us from 82650 to 85036 of 216930.
+- unusual: Between 38.7% and 40.6%, giving us from 83951 to 88073 of 216930.
+- non_english: Between 43.2% and 44.6%, giving us from 93713 to 96750 of 216930.
