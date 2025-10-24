@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import random
 
 def get_questions(num_questions: int, training_cat: str):
     '''This function select "num_questions" of each category to be used during the model training.'''
@@ -18,7 +19,11 @@ def get_questions(num_questions: int, training_cat: str):
     with open(file_path) as file:
         questions = json.load(file)
 
-        for question in questions:
+        # If has reached the correct num of questions for each category, stop looking
+        while len(cat_questions) < num_questions or len(normal_questions) < num_questions:
+            # Get a random question
+            question = questions[random.randint(0, len(questions) - 1)]
+
             # Clean the question text
             question_text = question['question'].strip("'").replace(',', '')
             question_text = re.sub(r'<[^>]+>', '', question_text)
@@ -70,10 +75,6 @@ def get_questions(num_questions: int, training_cat: str):
                 # If it is none of the others and normal ones are still needed.
                 if not any_cat and len(normal_questions) < num_questions:
                     normal_questions.append(f'"{question_text}",normal\n')
-
-            # If has reached the correct num of questions for each category, stop looking
-            if len(cat_questions) >= num_questions and len(normal_questions) >= num_questions:
-                break
     
     # Write the selected questions to a file
     file_path = os.path.join(os.path.dirname(__file__), f'../../files/{training_cat}_train_set.csv')

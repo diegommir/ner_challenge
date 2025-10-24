@@ -2,6 +2,7 @@ import os
 import re
 import json
 import torch
+import random
 
 from transformers import BertTokenizer, BertForSequenceClassification
 
@@ -32,10 +33,19 @@ def curate_questions(num_questions: int, curated_cat: str):
     file_path = os.path.join(os.path.dirname(__file__), '../../files/JEOPARDY_QUESTIONS1.json')
     with open(file_path) as file:
         questions = json.load(file)
+        print('Total Questions:', len(questions))
+
+        # Used to calculate how many iterations needed to find the amount of questions
+        total_iter = 0
 
         print('Classifying questions...')
-        # Start classifying questions
-        for question in questions:
+        # If has reached the correct num of questions for each category, stop looking
+        while len(curated_questions) < num_questions:
+            # Get a random question
+            question = questions[random.randint(0, len(questions) - 1)]
+
+            total_iter += 1
+
             # Clean the question text
             question_text = question['question'].strip("'").replace(',', '')
             question_text = re.sub(r'<[^>]+>', '', question_text)
@@ -61,10 +71,6 @@ def curate_questions(num_questions: int, curated_cat: str):
             # If it is from a curated category and question still needed.
             if pred.int() == 1 and len(curated_questions) < num_questions:
                 curated_questions.append(question)
-        
-            # If has reached the correct num of questions for each category, stop looking
-            if len(curated_questions) >= num_questions:
-                break
     
     print('Writing questions to files...')
     # Write the numbers questions to a file
@@ -73,8 +79,13 @@ def curate_questions(num_questions: int, curated_cat: str):
         json.dump(curated_questions, file, indent=4)
     
     print('Successfully finished.')
+    
+    ratio = num_questions / total_iter
+    print(f'Curated to Total Questions ratio for {curated_cat} category: {ratio:.3f}')
+    print('========================================================================')
 
 if __name__ == '__main__':
-    curate_questions(1000, 'numbers')
-    curate_questions(1000, 'unusual')
-    curate_questions(1000, 'non_english')
+    num_questions = 1000
+    curate_questions(num_questions, 'numbers')
+    curate_questions(num_questions, 'unusual')
+    curate_questions(num_questions, 'non_english')
