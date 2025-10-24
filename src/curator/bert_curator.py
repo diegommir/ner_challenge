@@ -1,27 +1,31 @@
 import os
-import torch
+import re
 import json
+import torch
 
 from transformers import BertTokenizer, BertForSequenceClassification
 
-def curate_questions(num_questions: int):
+def curate_questions(num_questions: int, curated_cat: str):
     '''This function applies the trained model to select suitable questions of each category
     based on the given "num_questions" param.'''
-    print('Start curating questions...')
+    print('Start curating', curated_cat, 'questions...')
     
     print('Loading model...')
-    # Set torch as CPU since this time is supposed to run in a simple prod container
-    device = torch.device('cpu')
+    device_name = 'cpu'
+    if torch.cuda.is_available():
+        device_name = 'cuda'
+    print('Device Name:', device_name)
+    device = torch.device(device_name)
 
     # Load model and set wights
-    dir_path = os.path.join(os.path.dirname(__file__), f'../../models/bert_questions/')
+    dir_path = os.path.join(os.path.dirname(__file__), f'../../models/{curated_cat}_bert/')
     model = BertForSequenceClassification.from_pretrained(dir_path)
     model.eval()
 
     tokenizer = BertTokenizer.from_pretrained('google-bert/bert-base-uncased')
 
     # Curated lists
-    numbers_questions = []
+    curated_questions = []
 
     print('Opening questions file...')
     # Open the questions file
@@ -32,7 +36,9 @@ def curate_questions(num_questions: int):
         print('Classifying questions...')
         # Start classifying questions
         for question in questions:
+            # Clean the question text
             question_text = question['question'].strip("'").replace(',', '')
+            question_text = re.sub(r'<[^>]+>', '', question_text)
 
             # Turn question text to tokens
             tokenized = tokenizer(
@@ -52,21 +58,23 @@ def curate_questions(num_questions: int):
                 output = model(input_ids=input_ids, attention_mask=attention_mask)
                 pred = torch.argmax(output.logits, dim=1)
 
-            # If it is numbers category and numbers question still needed.
-            if pred.int() == 1 and len(numbers_questions) < num_questions:
-                numbers_questions.append(question)
+            # If it is from a curated category and question still needed.
+            if pred.int() == 1 and len(curated_questions) < num_questions:
+                curated_questions.append(question)
         
             # If has reached the correct num of questions for each category, stop looking
-            if len(numbers_questions) >= num_questions:
+            if len(curated_questions) >= num_questions:
                 break
     
     print('Writing questions to files...')
     # Write the numbers questions to a file
-    file_path = os.path.join(os.path.dirname(__file__), '../../files/numbers.json')
+    file_path = os.path.join(os.path.dirname(__file__), f'../../files/curated_{curated_cat}.json')
     with open(file_path, 'w', encoding='utf-8') as file:
-        json.dump(numbers_questions, file, indent=4)
+        json.dump(curated_questions, file, indent=4)
     
     print('Successfully finished.')
 
 if __name__ == '__main__':
-    curate_questions(1000)
+    curate_questions(1000, 'numbers')
+    curate_questions(1000, 'unusual')
+    curate_questions(1000, 'non_english')
