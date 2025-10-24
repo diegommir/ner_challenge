@@ -1,7 +1,7 @@
 '''
 This module is an attempt to use a larger LLM to help tagging questions properly to be used as training datasets for fine tune a model.
 But even for this purpose, it has proven difficult to write a prompt able to describe the characteristics of the problem.
-So this module is going to be used as a base to separate a couple of examples to manual curation.
+So so since the results are not good, this module should not be used. I'm keeping it here just as one example of utter failure. =)
 '''
 
 import os
@@ -104,7 +104,7 @@ client = OpenAI(
 )
 
 def generate_datasets():
-    '''This function attempts to generate training datasets using LLMs. But the result is not good and should not be used.'''
+    '''This function attempts to generate training datasets using LLMs. But the results are not good and should not be used.'''
     unusual_dataset = []
     numbers_dataset = []
     non_english_dataset = []

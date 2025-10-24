@@ -7,49 +7,11 @@ from torch.optim import AdamW
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-def encode_category(category):
-    '''This function encode/converts the categories from strings to numbers, 
-    in a way that the model can be trained'''
-    if category == 'numbers':
-        return 1
-    if category == 'unusual':
-        return 2
-    if category == 'non_english':
-        return 3
-    else:
-        return 0
-
-class CustomDataset(Dataset):
-    '''This class encapsulate the dataset that is going to be used during training.
-    It also returns the dataset values already tokenized and ready to be used by the model.'''
-    def __init__(self, questions: list[str], categories: list[int], tokenizer: BertTokenizer, token_length: int):
-        self.questions = questions
-        self.categories = categories
-        self.tokenizer = tokenizer
-        self.token_length = token_length
-
-    def __len__(self):
-        return len(self.questions)
-    
-    def __getitem__(self, i):
-        tokenized = self.tokenizer(
-            self.questions[i],
-            max_length=self.token_length,
-            padding='max_length',
-            truncation=True,
-            return_tensors='pt'
-        )
-
-        return {
-            'input_ids': tokenized['input_ids'].squeeze(0),
-            'attention_mask': tokenized['attention_mask'].squeeze(0),
-            'categories': torch.tensor(self.categories[i], dtype=torch.long)
-        }
-
-def run_training(relative_path: str):
+def run_training(relative_path: str, training_cat: str, batch_size: int = 10, lr: float = 0.00005, epochs: int = 3):
     '''This function trains the model, evaluates it and saves it to the disk for later use.'''
-    print('Starting training...')
+    print('Starting', training_cat, 'training...')
 
     # Loads the training dataset and apply de encoding of the labels.
     file_path = os.path.join(os.path.dirname(__file__), relative_path)
@@ -72,7 +34,6 @@ def run_training(relative_path: str):
     test_set = CustomDataset(x_test, y_test, tokenizer, token_length)
 
     # ... and then we create a DataLoader, which is responsible to iterate through the data during test and eval steps.
-    batch_size = 10
     train_dl = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_dl = DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
@@ -84,11 +45,10 @@ def run_training(relative_path: str):
     device = torch.device(device_name)
     model = BertForSequenceClassification.from_pretrained('google-bert/bert-base-uncased', num_labels=2)
     model.to(device)
-    optimizer = AdamW(model.parameters(), lr=0.00005)
+    optimizer = AdamW(model.parameters(), lr=lr)
 
     # Start Training
     print('Training loop...')
-    epochs = 3
     for epoch in range(epochs):
         # Set model for training mode
         model.train()
@@ -126,8 +86,8 @@ def run_training(relative_path: str):
 
     # Start Evaluation
     print('Evaluation loop...')
-    true_positive = 0
-    total = 0
+    all_true = []
+    all_pred = []
 
     model.eval()
     with torch.no_grad():
@@ -144,21 +104,64 @@ def run_training(relative_path: str):
             output = model(input_ids=input_ids, attention_mask=attention_mask)
             pred = torch.argmax(output.logits, dim=1)
 
-            true_positive += (pred == categories).sum().item()
-            total += categories.size(0)
-        
-    accuracy = true_positive / total
-    print('Accuracy:', accuracy)
-    
+            all_true += categories
+            all_pred += pred
+
+    print(f'Accuracy: {accuracy_score(all_true, all_pred):.3f}')
+    print(f'Precision: {precision_score(all_true, all_pred):.3f}')
+    print(f'Recall: {recall_score(all_true, all_pred):.3f}')
+    print(f'F1 Score: {f1_score(all_true, all_pred):.3f}')
+
     # This is the "torch way" of saving the model for reuse. Since we are going to use transformers
     # along the way, so is not the best way to save it.
     # file_path = os.path.join(os.path.dirname(__file__), f'../../models/bert_questions.pt')
     # torch.save(model.state_dict(), file_path)
 
     # Transformers way to save the model
-    dir_path = os.path.join(os.path.dirname(__file__), f'../../models/bert_questions/')
+    dir_path = os.path.join(os.path.dirname(__file__), f'../../models/{training_cat}_bert/')
     model.save_pretrained(dir_path)
+
+def encode_category(category):
+    '''This function encode/converts the categories from strings to numbers, 
+    in a way that the model can be trained'''
+    if category == 'numbers':
+        return 1
+    if category == 'unusual':
+        return 1
+    if category == 'non_english':
+        return 1
+    else:
+        return 0
+
+class CustomDataset(Dataset):
+    '''This class encapsulate the dataset that is going to be used during training.
+    It also returns the dataset values already tokenized and ready to be used by the model.'''
+    def __init__(self, questions: list[str], categories: list[int], tokenizer: BertTokenizer, token_length: int):
+        self.questions = questions
+        self.categories = categories
+        self.tokenizer = tokenizer
+        self.token_length = token_length
+
+    def __len__(self):
+        return len(self.questions)
+    
+    def __getitem__(self, i):
+        tokenized = self.tokenizer(
+            self.questions[i],
+            max_length=self.token_length,
+            padding='max_length',
+            truncation=True,
+            return_tensors='pt'
+        )
+
+        return {
+            'input_ids': tokenized['input_ids'].squeeze(0),
+            'attention_mask': tokenized['attention_mask'].squeeze(0),
+            'categories': torch.tensor(self.categories[i], dtype=torch.long)
+        }
 
 if __name__ == '__main__':
     print('Command line run...')
-    run_training('../../files/train_set.csv')
+    run_training('../../files/numbers_train_set.csv', 'numbers', batch_size=30, lr=0.0001, epochs=3)
+    run_training('../../files/unusual_train_set.csv', 'unusual', batch_size=30, lr=0.0001, epochs=4)
+    run_training('../../files/non_english_train_set.csv', 'non_english', batch_size=30, lr=0.00009, epochs=5)
