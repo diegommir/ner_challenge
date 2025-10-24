@@ -44,3 +44,17 @@ Also rates smaller than 0.00005 started to show slightly worse results. So numbe
 
 ### Epochs
 3 to 5 epochs have shown to be sufficient to get good results. Numbers above and lower those ones were not showing any improvements.
+
+## The Solution
+The solution is basically divided into three main python modules. All of them can be tested from command line, but on a real world application we would probably serve it as a backend behind an API or through a MCP Server.
+
+- training.question_selector: This module is used to create the necessary training datasets.
+- training.fine_tuner: This module is used to train the BERT models using the datasets created.
+- curator.bert_curator: This module is used to apply the BERT classifier on the model and select the desired amount of questions.
+
+### 3 Model Approach
+Initially I thought about training only one BERT model that would be able to select through all categories at one.
+But I realized that one question could fall into more than one category.
+So to train only one BERT model capable of that, I would have to take into account the possible combinations of classes, for example 
+numbers|unusual category or non_english|numbers.
+This would probably be a more elegant solution. But since the time is limited, I decided to train instead three models, each one specialized into one of the categories. This way the fine_tuner module was built to be able to train each model separately.
