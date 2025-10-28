@@ -8,7 +8,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 
 def curate_questions(num_questions: int, curated_cat: str):
     '''This function applies the trained model to select suitable questions of each category
-    based on the given "num_questions" param.'''
+    based on the given "num_questions" param and the "curated_cat".'''
     print('Start curating', curated_cat, 'questions...')
     
     print('Loading model...')
@@ -85,7 +85,13 @@ def curate_questions(num_questions: int, curated_cat: str):
     print('========================================================================')
 
 if __name__ == '__main__':
+    import time
+    ini_time = time.time()
+
     num_questions = 1000
     curate_questions(num_questions, 'numbers')
     curate_questions(num_questions, 'unusual')
     curate_questions(num_questions, 'non_english')
+
+    exec_time = time.time() - ini_time
+    print(f'Execution Time: {exec_time:.6f}')
