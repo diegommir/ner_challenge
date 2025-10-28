@@ -17,21 +17,21 @@ The criteria I used was the easiest way possible for me to automate the selectio
     - This is the easiest category to select and to predict, since it is the best defined one.
 - For the "non-english" category, the criteria is to use a database of english words found at
 https://github.com/dwyl/english-words.
-    - I have chosen to use the "words_alpha" version, which have only word with letters. So no numbers or symbols.
+    - I have chosen to use the "words_alpha" version, which have only words with letters. So no numbers nor symbols.
     - This will potentially ignore some common abbreviation, contraptions and acronyms.
-- For the "unusual" category, the criteria is to identify the non-English word, and test if it has a capital first letter (camel/title case), this way inferring the proper names.
+- For the "unusual" category, the criteria is to identify a non-English word and then test if it has a capital first letter (camel/title case), this way inferring a proper name.
 
 ### Limitations
 This approach has many limitations on real world applications and serve as a proof of concept only.
 In a real world scenario would be preferred to choose the training dataset with the supervision of someone from the business area.
-This is even going to make difficult for the model to abstract the idea behind the categories, especially the "non-english" and the "unusual" ones.
+This is potentially going to make difficult for the model to abstract the idea behind the categories, especially the "non-english" and the "unusual" ones.
 
 ## Samples
 For the "numbers" category as few as one hundred samples were sufficient to get a good result. As expected, I got 90%+ accuracy and F1 score easily and with few adjustments to parameters.
 
-But for the other two categories I had to use more samples and had to try many different adjustments to get good training results. At the end I've used two hundred to improve the results and reach accuracy levels higher than 80%, 85%.
+But for the other two categories I had to use more samples and had to try many different adjustments to get good training results. At the end I've used two hundred samples to improve the results and to reach accuracy levels higher than 80%, 85%.
 
-Probably using even more samples and addressing some of the topics discussed within Limitations, would make the model perform even better 
+Probably using even more samples and by addressing some of the topics discussed within Limitations, it would make the model perform even better 
 reaching scores above 90%, 95%.
 
 ## Hyper Parameters
@@ -53,11 +53,11 @@ The solution is basically divided into three main python modules. All of them ca
 - curator.bert_curator: This module is used to apply the BERT classifier on the questions dataset and select the desired amount of questions.
 
 ### 3 Model Approach
-Initially I thought about training only one BERT model that would be able to select through all categories at one.
+Initially I thought about training only one BERT model that would be able to select through all categories at once.
 But I realized that one question could fall into more than one category.
 So to train only one BERT model capable of that, I would have to take into account the possible combinations of classes, for example 
-numbers|unusual category or non_english|numbers.
-This would probably be a more elegant solution. But since the time is limited, I decided to train instead three models, each one specialized into one of the categories. This way the fine_tuner module was built to be able to train each model separately.
+numbers|unusual category or non_english|numbers category.
+This would probably be a more elegant solution. But since the time is limited, instead I decided to train three models, each one specialized into one of the categories. This way the fine_tuner module was built to be able to train each model separately.
 
 ## Estimation Problem
 There is a secondary challenge asking for an estimation of how many questions each category has among the total Jeopardy dataset.
